@@ -6,11 +6,11 @@
           New Note
         </button>
         <ul>
-          <li v-for="(note, index) in notes" :key="index">
+          <li v-for="note in notes" :key="note.id">
             <a
-              @click="handleClickNote(index)"
+              @click="handleClickNote(note)"
               class="item"
-              :class="{ active: index === currentIndex }"
+              :class="{ active: note === currentNote }"
               href="#"
               :title="note.title"
               >{{ note.title }}
@@ -21,7 +21,7 @@
     </div>
     <div class="column content is-paddingless" v-if="notes.length != 0">
       <input
-        v-model="note.title"
+        v-model="currentNote.title"
         ref="title"
         type="text"
         class="note-title"
@@ -31,7 +31,7 @@
       <textarea
         class="note-content"
         placeholder="Content..."
-        v-model="note.content"
+        v-model="currentNote.content"
         @keyup="handleChange('content')"
       >
       </textarea>
@@ -47,49 +47,46 @@
 </template>
 
 <script>
+import { v4 as uuid } from "uuid";
+
 export default {
   name: "App",
   data() {
     return {
       notes: [],
-      note: null,
-      currentIndex: 0,
+      currentNote: null,
     };
   },
   mounted() {
     this.notes = JSON.parse(window.localStorage.getItem("notes")) || [];
-    if (this.notes.length) this.note = this.notes[0];
+    if (this.notes.length) this.currentNote = this.notes[0];
   },
   methods: {
-    handleClickNote(index) {
-      this.currentIndex = index;
-      this.note = this.notes[this.currentIndex];
+    updateData(data) {
+      localStorage.setItem("notes", JSON.stringify(data));
+    },
+    handleClickNote(note) {
+      this.currentNote = note;
     },
     handleClickAdd() {
-      this.add({
+      let newNote = {
+        id: uuid(),
         title: "",
         content: "",
-      });
-    },
-    add(note) {
-      this.notes.unshift(note);
-      this.note = note;
+      }
+      this.notes.unshift(newNote);
+      this.currentNote = newNote;
+      this.updateData(this.notes);
     },
     handleChange(field) {
-      this.notes[this.currentIndex][field] = this.note[field];
+      this.notes.find(note => note.id == this.currentNote.id )[field] = this.currentNote[field];
+      this.updateData(this.notes);
     },
     handleClickDelete() {
-      this.notes.splice(this.currentIndex, 1);
-      this.currentIndex = 0;
-      this.note = this.notes[this.currentIndex];
-    },
-  },
-  watch: {
-    notes: {
-      handler() {
-        localStorage.setItem("notes", JSON.stringify(this.notes));
-      },
-      deep: true,
+      let index = this.notes.findIndex(note => note.id == this.currentNote.id )
+      this.notes.splice(index, 1);
+      this.currentNote = this.notes[0];
+      this.updateData(this.notes);
     },
   },
 };
